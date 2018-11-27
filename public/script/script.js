@@ -1,61 +1,43 @@
 
 (() => {
-    let canvas;
-    let canvasWidth;
-    let canvasHeight;
-    let gl;
-    let ext;
-    let run;
-    let mat;
+    let canvas, canvasWidth, canvasHeight;
+    let gl, ext, run;
     let textures = [];
-    let mouse = [0.0, 0.0];
-    let isMouseDown = false;
-
+    let mat = new matIV();
     let audio = new gl3Audio(0.3, 0.5);
 
     let scenePrg;
     let resetPrg;
+    let pastePrg;
     let positionPrg;
     let velocityPrg;
 
-    const POINT_RESOLUTION      = 256;
-    const POINT_SIZE            = 3.0;
-    const POINT_COLOR           = [1.0, 0.3, 0.8, 0.25];
-    const POSITION_BUFFER_INDEX = 1;
-    const VELOCITY_BUFFER_INDEX = 3;
+    const DEBUG_MODE = true;
+
+    const POINT_RESOLUTION       = 32;
+    const POINT_SIZE             = 5.0;
+    const POINT_COLOR            = [1.0, 0.3, 0.8, 0.25];
+    const POSITION_BUFFER_INDEX  = 1;
+    const VELOCITY_BUFFER_INDEX  = 3;
+    const FRAMEBUFFER_RESOLUTION = 128;
 
     window.addEventListener('load', () => {
         canvas = document.getElementById('canvas');
-        canvasWidth = window.innerWidth;
-        canvasHeight = window.innerHeight;
-        canvas.width = canvasWidth;
-        canvas.height = canvasHeight;
-        gl = canvas.getContext('webgl');
-        if(gl == null){
-            console.log('webgl unsupported');
-            return;
-        }
-        mat = new matIV();
-        ext = getWebGLExtensions();
-        window.addEventListener('keydown', (eve) => {
-            run = eve.keyCode !== 27;
-            if(run !== true){
-                audio.src[0].stop();
-            }
-        }, false);
+        setCanvasSize();
 
-        window.addEventListener('mousedown', () => {
-            isMouseDown = true;
-        }, false);
-        window.addEventListener('mouseup', () => {
-            isMouseDown = false;
-        }, false);
-        window.addEventListener('mousemove', (eve) => {
-            if(isMouseDown !== true){return;};
-            let x = (eve.clientX / canvasWidth) * 2.0 - 1.0;
-            let y = (eve.clientY / canvasHeight) * 2.0 - 1.0;
-            mouse = [x, -y];
-        }, false);
+        gl = canvas.getContext('webgl');
+        ext = getWebGLExtensions();
+
+        // events
+        window.addEventListener('resize', setCanvasSize, false);
+        if(DEBUG_MODE === true){
+            window.addEventListener('keydown', (eve) => {
+                run = eve.keyCode !== 27;
+                if(run !== true){
+                    audio.src[0].stop();
+                }
+            }, false);
+        }
 
         createTexture('./image/lenna.jpg', (textureObject) => {
             textures[0] = textureObject;
@@ -80,6 +62,18 @@
                     let prg = createProgram(vs, fs);
                     if(prg == null){return;}
                     resetPrg = new ProgramParameter(prg);
+                    loadCheck();
+                }
+            );
+            loadShaderSource(
+                './shader/paste.vert',
+                './shader/paste.frag',
+                (shader) => {
+                    let vs = createShader(shader.vs, gl.VERTEX_SHADER);
+                    let fs = createShader(shader.fs, gl.FRAGMENT_SHADER);
+                    let prg = createProgram(vs, fs);
+                    if(prg == null){return;}
+                    pastePrg = new ProgramParameter(prg);
                     loadCheck();
                 }
             );
@@ -112,6 +106,7 @@
             if(
                 scenePrg != null &&
                 resetPrg != null &&
+                pastePrg != null &&
                 positionPrg != null &&
                 velocityPrg != null &&
                 true
@@ -140,6 +135,15 @@
         resetPrg.uniLocation[0] = gl.getUniformLocation(resetPrg.program, 'resolution');
         resetPrg.uniType[0]     = 'uniform2fv';
 
+        pastePrg.attLocation[0] = gl.getAttribLocation(pastePrg.program, 'position');
+        pastePrg.attLocation[1] = gl.getAttribLocation(pastePrg.program, 'texCoord');
+        pastePrg.attStride[0]   = 3;
+        pastePrg.attStride[1]   = 2;
+        pastePrg.uniLocation[0] = gl.getUniformLocation(pastePrg.program, 'resolution');
+        pastePrg.uniLocation[1] = gl.getUniformLocation(pastePrg.program, 'texture');
+        pastePrg.uniType[0]     = 'uniform2fv';
+        pastePrg.uniType[1]     = 'uniform1i';
+
         positionPrg.attLocation[0] = gl.getAttribLocation(positionPrg.program, 'position');
         positionPrg.attStride[0]   = 3;
         positionPrg.uniLocation[0] = gl.getUniformLocation(positionPrg.program, 'prevTexture');
@@ -158,7 +162,7 @@
         velocityPrg.uniLocation[2] = gl.getUniformLocation(velocityPrg.program, 'resolution');
         velocityPrg.uniLocation[3] = gl.getUniformLocation(velocityPrg.program, 'time');
         velocityPrg.uniLocation[4] = gl.getUniformLocation(velocityPrg.program, 'move');
-        velocityPrg.uniLocation[5] = gl.getUniformLocation(velocityPrg.program, 'mouse');
+        velocityPrg.uniLocation[5] = gl.getUniformLocation(velocityPrg.program, '');
         velocityPrg.uniType[0]     = 'uniform1i';
         velocityPrg.uniType[1]     = 'uniform1i';
         velocityPrg.uniType[2]     = 'uniform2fv';
@@ -218,6 +222,7 @@
             createFramebufferFloat(ext, POINT_RESOLUTION, POINT_RESOLUTION),
             createFramebufferFloat(ext, POINT_RESOLUTION, POINT_RESOLUTION)
         ];
+        let outFramebuffer = createFramebuffer(FRAMEBUFFER_RESOLUTION, FRAMEBUFFER_RESOLUTION);
 
         // textures
         gl.activeTexture(gl.TEXTURE0);
@@ -230,6 +235,8 @@
         gl.bindTexture(gl.TEXTURE_2D, velocityFramebuffers[0].texture);
         gl.activeTexture(gl.TEXTURE0 + VELOCITY_BUFFER_INDEX + 1);
         gl.bindTexture(gl.TEXTURE_2D, velocityFramebuffers[1].texture);
+        gl.activeTexture(gl.TEXTURE5);
+        gl.bindTexture(gl.TEXTURE_2D, outFramebuffer.texture);
 
         // reset framebuffers
         gl.useProgram(resetPrg.program);
@@ -289,7 +296,7 @@
             gl[velocityPrg.uniType[2]](velocityPrg.uniLocation[2], [POINT_RESOLUTION, POINT_RESOLUTION]);
             gl[velocityPrg.uniType[3]](velocityPrg.uniLocation[3], nowTime);
             gl[velocityPrg.uniType[4]](velocityPrg.uniLocation[4], isMouseDown);
-            gl[velocityPrg.uniType[5]](velocityPrg.uniLocation[5], mouse);
+            gl[velocityPrg.uniType[5]](velocityPrg.uniLocation[5], [0.0, 0.0]);
             gl.drawElements(gl.TRIANGLES, planeIndex.length, gl.UNSIGNED_SHORT, 0);
             // position update
             gl.useProgram(positionPrg.program);
@@ -301,15 +308,15 @@
             gl[positionPrg.uniType[3]](positionPrg.uniLocation[3], isMouseDown);
             gl.drawElements(gl.TRIANGLES, planeIndex.length, gl.UNSIGNED_SHORT, 0);
 
-            // render to canvas -------------------------------------------
+            // render to final scene ------------------------------------------
             gl.enable(gl.BLEND);
             gl.useProgram(scenePrg.program);
-            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, outFramebuffer.framebuffer);
             setAttribute(pointVBO, scenePrg.attLocation, scenePrg.attStride);
             gl.clearColor(0.0, 0.0, 0.0, 1.0);
             gl.clearDepth(1.0);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            gl.viewport(0, 0, canvasWidth, canvasHeight);
+            gl.viewport(0, 0, FRAMEBUFFER_RESOLUTION, FRAMEBUFFER_RESOLUTION);
 
             // push and render
             mat.identity(mMatrix);
@@ -320,6 +327,16 @@
             gl[scenePrg.uniType[2]](scenePrg.uniLocation[2], POSITION_BUFFER_INDEX + targetBufferIndex);
             gl[scenePrg.uniType[3]](scenePrg.uniLocation[3], POINT_COLOR);
             gl.drawArrays(gl.POINTS, 0, POINT_RESOLUTION * POINT_RESOLUTION);
+
+            // render to canvas -----------------------------------------------
+            gl.disable(gl.BLEND);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            gl.useProgram(pastePrg.program);
+            gl.viewport(0, 0, canvasWidth, canvasHeight);
+            setAttribute(planeTexCoordVBO, pastePrg.attLocation, pastePrg.attStride, planeIBO);
+            gl[pastePrg.uniType[0]](pastePrg.uniLocation[0], [canvasWidth, canvasHeight]);
+            gl[pastePrg.uniType[1]](pastePrg.uniLocation[1], 5);
+            gl.drawElements(gl.TRIANGLES, planeIndex.length, gl.UNSIGNED_SHORT, 0);
 
             gl.flush();
 
@@ -451,8 +468,8 @@
         let fTexture = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, fTexture);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, fTexture, 0);
@@ -489,5 +506,11 @@
             textureFloat:     gl.getExtension('OES_texture_float'),
             textureHalfFloat: gl.getExtension('OES_texture_half_float')
         };
+    }
+
+    function setCanvasSize(){
+        canvasWidth = canvasHeight = Math.min(window.innerWidth, window.innerHeight);
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
     }
 })();
