@@ -141,8 +141,10 @@
         pastePrg.attStride[1]   = 2;
         pastePrg.uniLocation[0] = gl.getUniformLocation(pastePrg.program, 'resolution');
         pastePrg.uniLocation[1] = gl.getUniformLocation(pastePrg.program, 'texture');
+        pastePrg.uniLocation[2] = gl.getUniformLocation(pastePrg.program, 'globalTime');
         pastePrg.uniType[0]     = 'uniform2fv';
         pastePrg.uniType[1]     = 'uniform1i';
+        pastePrg.uniType[2]     = 'uniform1f';
 
         positionPrg.attLocation[0] = gl.getAttribLocation(positionPrg.program, 'position');
         positionPrg.attStride[0]   = 3;
@@ -277,7 +279,7 @@
             for(let i = 0; i < 16; ++i){
                 soundData += (audio.src[0].onData[i] / 255.0) * 0.1;
             }
-            isMouseDown = soundData > 1.8;
+            let isMouseDown = soundData > 1.8;
 
             nowTime = (Date.now() - startTime) / 1000;
             ++loopCount;
@@ -336,6 +338,7 @@
             setAttribute(planeTexCoordVBO, pastePrg.attLocation, pastePrg.attStride, planeIBO);
             gl[pastePrg.uniType[0]](pastePrg.uniLocation[0], [canvasWidth, canvasHeight]);
             gl[pastePrg.uniType[1]](pastePrg.uniLocation[1], 5);
+            gl[pastePrg.uniType[2]](pastePrg.uniLocation[2], nowTime);
             gl.drawElements(gl.TRIANGLES, planeIndex.length, gl.UNSIGNED_SHORT, 0);
 
             gl.flush();
