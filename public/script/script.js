@@ -10,6 +10,7 @@
     let resetPrg;
     let pastePrg;
     let lowresPrg;
+    let graphPrg;
     let positionPrg;
     let velocityPrg;
 
@@ -97,6 +98,18 @@
                 }
             );
             loadShaderSource(
+                './shader/graph.vert',
+                './shader/graph.frag',
+                (shader) => {
+                    let vs = createShader(shader.vs, gl.VERTEX_SHADER);
+                    let fs = createShader(shader.fs, gl.FRAGMENT_SHADER);
+                    let prg = createProgram(vs, fs);
+                    if(prg == null){return;}
+                    graphPrg = new ProgramParameter(prg);
+                    loadCheck();
+                }
+            );
+            loadShaderSource(
                 './shader/position.vert',
                 './shader/position.frag',
                 (shader) => {
@@ -127,6 +140,7 @@
                 resetPrg != null &&
                 pastePrg != null &&
                 lowresPrg != null &&
+                graphPrg != null &&
                 positionPrg != null &&
                 velocityPrg != null &&
                 true
@@ -176,6 +190,15 @@
         lowresPrg.attStride[1]   = 2;
         lowresPrg.uniLocation[0] = gl.getUniformLocation(lowresPrg.program, 'imageTexture');
         lowresPrg.uniType[0]     = 'uniform1i';
+
+        graphPrg.attLocation[0] = gl.getAttribLocation(graphPrg.program, 'position');
+        graphPrg.attLocation[1] = gl.getAttribLocation(graphPrg.program, 'texCoord');
+        graphPrg.attStride[0]   = 3;
+        graphPrg.attStride[1]   = 2;
+        graphPrg.uniLocation[0] = gl.getUniformLocation(graphPrg.program, 'resolution');
+        graphPrg.uniLocation[1] = gl.getUniformLocation(graphPrg.program, 'globalTime');
+        graphPrg.uniType[0]     = 'uniform2fv';
+        graphPrg.uniType[1]     = 'uniform1f';
 
         positionPrg.attLocation[0] = gl.getAttribLocation(positionPrg.program, 'position');
         positionPrg.attStride[0]   = 3;
@@ -354,15 +377,15 @@
 
             // render to final scene ------------------------------------------
             gl.enable(gl.BLEND);
-            gl.useProgram(scenePrg.program);
             gl.bindFramebuffer(gl.FRAMEBUFFER, outFramebuffer.framebuffer);
-            setAttribute(pointVBO, scenePrg.attLocation, scenePrg.attStride);
             gl.clearColor(0.0, 0.0, 0.0, 1.0);
             gl.clearDepth(1.0);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             gl.viewport(0, 0, FRAMEBUFFER_RESOLUTION, FRAMEBUFFER_RESOLUTION);
 
             // push and render
+            gl.useProgram(scenePrg.program);
+            setAttribute(pointVBO, scenePrg.attLocation, scenePrg.attStride);
             mat.identity(mMatrix);
             mat.scale(mMatrix, [soundData, soundData, soundData], mMatrix);
             mat.multiply(vpMatrix, mMatrix, mvpMatrix);
@@ -371,6 +394,13 @@
             gl[scenePrg.uniType[2]](scenePrg.uniLocation[2], POSITION_BUFFER_INDEX + targetBufferIndex);
             gl[scenePrg.uniType[3]](scenePrg.uniLocation[3], POINT_COLOR);
             gl.drawArrays(gl.POINTS, 0, POINT_RESOLUTION * POINT_RESOLUTION);
+
+            // graph render
+            gl.useProgram(graphPrg.program);
+            setAttribute(planeTexCoordVBO, graphPrg.attLocation, graphPrg.attStride, planeIBO);
+            gl[graphPrg.uniType[0]](graphPrg.uniLocation[0], [FRAMEBUFFER_RESOLUTION, FRAMEBUFFER_RESOLUTION]);
+            gl[graphPrg.uniType[1]](graphPrg.uniLocation[1], nowTime);
+            gl.drawElements(gl.TRIANGLES, planeIndex.length, gl.UNSIGNED_SHORT, 0);
 
             // render to canvas -----------------------------------------------
             gl.disable(gl.BLEND);
