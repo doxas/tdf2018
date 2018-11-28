@@ -1,7 +1,7 @@
 
 (() => {
     let canvas, canvasWidth, canvasHeight;
-    let gl, ext, run;
+    let gl, ext, run, mouse = [0.0, 0.0];
     let textures = [];
     let mat = new matIV();
     let audio = new gl3Audio(0.3, 0.5);
@@ -9,6 +9,7 @@
     let scenePrg;
     let resetPrg;
     let pastePrg;
+    let lowresPrg;
     let positionPrg;
     let velocityPrg;
 
@@ -31,10 +32,16 @@
         // events
         window.addEventListener('resize', setCanvasSize, false);
         if(DEBUG_MODE === true){
+            canvas.addEventListener('mousemove', (eve) => {
+                let x = (eve.clientX / canvasWidth) * 2.0 - 1.0;
+                let y = (eve.clientY / canvasHeight) * 2.0 - 1.0;
+                mouse = [x, -y];
+                // console.log(mouse);
+            }, false);
             window.addEventListener('keydown', (eve) => {
                 run = eve.keyCode !== 27;
                 if(run !== true){
-                    audio.src[0].stop();
+                    // audio.src[0].stop();
                 }
             }, false);
         }
@@ -78,6 +85,18 @@
                 }
             );
             loadShaderSource(
+                './shader/lowres.vert',
+                './shader/lowres.frag',
+                (shader) => {
+                    let vs = createShader(shader.vs, gl.VERTEX_SHADER);
+                    let fs = createShader(shader.fs, gl.FRAGMENT_SHADER);
+                    let prg = createProgram(vs, fs);
+                    if(prg == null){return;}
+                    lowresPrg = new ProgramParameter(prg);
+                    loadCheck();
+                }
+            );
+            loadShaderSource(
                 './shader/position.vert',
                 './shader/position.frag',
                 (shader) => {
@@ -107,6 +126,7 @@
                 scenePrg != null &&
                 resetPrg != null &&
                 pastePrg != null &&
+                lowresPrg != null &&
                 positionPrg != null &&
                 velocityPrg != null &&
                 true
@@ -140,11 +160,22 @@
         pastePrg.attStride[0]   = 3;
         pastePrg.attStride[1]   = 2;
         pastePrg.uniLocation[0] = gl.getUniformLocation(pastePrg.program, 'resolution');
-        pastePrg.uniLocation[1] = gl.getUniformLocation(pastePrg.program, 'texture');
+        pastePrg.uniLocation[1] = gl.getUniformLocation(pastePrg.program, 'mouse');
         pastePrg.uniLocation[2] = gl.getUniformLocation(pastePrg.program, 'globalTime');
+        pastePrg.uniLocation[3] = gl.getUniformLocation(pastePrg.program, 'imageTexture');
+        pastePrg.uniLocation[4] = gl.getUniformLocation(pastePrg.program, 'sceneTexture');
         pastePrg.uniType[0]     = 'uniform2fv';
-        pastePrg.uniType[1]     = 'uniform1i';
+        pastePrg.uniType[1]     = 'uniform2fv';
         pastePrg.uniType[2]     = 'uniform1f';
+        pastePrg.uniType[3]     = 'uniform1i';
+        pastePrg.uniType[4]     = 'uniform1i';
+
+        lowresPrg.attLocation[0] = gl.getAttribLocation(lowresPrg.program, 'position');
+        lowresPrg.attLocation[1] = gl.getAttribLocation(lowresPrg.program, 'texCoord');
+        lowresPrg.attStride[0]   = 3;
+        lowresPrg.attStride[1]   = 2;
+        lowresPrg.uniLocation[0] = gl.getUniformLocation(lowresPrg.program, 'imageTexture');
+        lowresPrg.uniType[0]     = 'uniform1i';
 
         positionPrg.attLocation[0] = gl.getAttribLocation(positionPrg.program, 'position');
         positionPrg.attStride[0]   = 3;
@@ -225,6 +256,7 @@
             createFramebufferFloat(ext, POINT_RESOLUTION, POINT_RESOLUTION)
         ];
         let outFramebuffer = createFramebuffer(FRAMEBUFFER_RESOLUTION, FRAMEBUFFER_RESOLUTION);
+        let lowresFramebuffer = createFramebuffer(FRAMEBUFFER_RESOLUTION, FRAMEBUFFER_RESOLUTION);
 
         // textures
         gl.activeTexture(gl.TEXTURE0);
@@ -239,6 +271,8 @@
         gl.bindTexture(gl.TEXTURE_2D, velocityFramebuffers[1].texture);
         gl.activeTexture(gl.TEXTURE5);
         gl.bindTexture(gl.TEXTURE_2D, outFramebuffer.texture);
+        gl.activeTexture(gl.TEXTURE6);
+        gl.bindTexture(gl.TEXTURE_2D, lowresFramebuffer.texture);
 
         // reset framebuffers
         gl.useProgram(resetPrg.program);
@@ -258,6 +292,14 @@
             gl.drawElements(gl.TRIANGLES, planeIndex.length, gl.UNSIGNED_SHORT, 0);
         }
 
+        // lowres framebuffer
+        gl.useProgram(lowresPrg.program);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, lowresFramebuffer.framebuffer);
+        gl.viewport(0, 0, FRAMEBUFFER_RESOLUTION, FRAMEBUFFER_RESOLUTION);
+        setAttribute(planeTexCoordVBO, lowresPrg.attLocation, lowresPrg.attStride, planeIBO);
+        gl[lowresPrg.uniType[0]](lowresPrg.uniLocation[0], 0);
+        gl.drawElements(gl.TRIANGLES, planeIndex.length, gl.UNSIGNED_SHORT, 0);
+
         // flags
         gl.disable(gl.DEPTH_TEST);
         gl.enable(gl.BLEND);
@@ -270,7 +312,7 @@
         run = true;
         render();
 
-        audio.src[0].play();
+        // audio.src[0].play();
 
         function render(){
             // update sound ---------------------------------------------------
@@ -337,8 +379,10 @@
             gl.viewport(0, 0, canvasWidth, canvasHeight);
             setAttribute(planeTexCoordVBO, pastePrg.attLocation, pastePrg.attStride, planeIBO);
             gl[pastePrg.uniType[0]](pastePrg.uniLocation[0], [canvasWidth, canvasHeight]);
-            gl[pastePrg.uniType[1]](pastePrg.uniLocation[1], 5);
+            gl[pastePrg.uniType[1]](pastePrg.uniLocation[1], mouse);
             gl[pastePrg.uniType[2]](pastePrg.uniLocation[2], nowTime);
+            gl[pastePrg.uniType[3]](pastePrg.uniLocation[3], 6);
+            gl[pastePrg.uniType[4]](pastePrg.uniLocation[4], 5);
             gl.drawElements(gl.TRIANGLES, planeIndex.length, gl.UNSIGNED_SHORT, 0);
 
             gl.flush();
