@@ -182,11 +182,13 @@
         pastePrg.uniLocation[2] = gl.getUniformLocation(pastePrg.program, 'globalTime');
         pastePrg.uniLocation[3] = gl.getUniformLocation(pastePrg.program, 'imageTexture');
         pastePrg.uniLocation[4] = gl.getUniformLocation(pastePrg.program, 'sceneTexture');
+        pastePrg.uniLocation[5] = gl.getUniformLocation(pastePrg.program, 'graphTexture');
         pastePrg.uniType[0]     = 'uniform2fv';
         pastePrg.uniType[1]     = 'uniform2fv';
         pastePrg.uniType[2]     = 'uniform1f';
         pastePrg.uniType[3]     = 'uniform1i';
         pastePrg.uniType[4]     = 'uniform1i';
+        pastePrg.uniType[5]     = 'uniform1i';
 
         lowresPrg.attLocation[0] = gl.getAttribLocation(lowresPrg.program, 'position');
         lowresPrg.attLocation[1] = gl.getAttribLocation(lowresPrg.program, 'texCoord');
@@ -282,7 +284,8 @@
             createFramebufferFloat(ext, POINT_RESOLUTION, POINT_RESOLUTION),
             createFramebufferFloat(ext, POINT_RESOLUTION, POINT_RESOLUTION)
         ];
-        let outFramebuffer = createFramebuffer(FRAMEBUFFER_RESOLUTION, FRAMEBUFFER_RESOLUTION);
+        let sceneFramebuffer = createFramebuffer(FRAMEBUFFER_RESOLUTION, FRAMEBUFFER_RESOLUTION);
+        let graphFramebuffer = createFramebuffer(FRAMEBUFFER_RESOLUTION, FRAMEBUFFER_RESOLUTION);
         let lowresFramebuffer = createFramebuffer(FRAMEBUFFER_RESOLUTION, FRAMEBUFFER_RESOLUTION);
 
         // textures
@@ -297,9 +300,11 @@
         gl.activeTexture(gl.TEXTURE0 + VELOCITY_BUFFER_INDEX + 1);
         gl.bindTexture(gl.TEXTURE_2D, velocityFramebuffers[1].texture);
         gl.activeTexture(gl.TEXTURE5);
-        gl.bindTexture(gl.TEXTURE_2D, outFramebuffer.texture);
-        gl.activeTexture(gl.TEXTURE6);
         gl.bindTexture(gl.TEXTURE_2D, lowresFramebuffer.texture);
+        gl.activeTexture(gl.TEXTURE6);
+        gl.bindTexture(gl.TEXTURE_2D, sceneFramebuffer.texture);
+        gl.activeTexture(gl.TEXTURE7);
+        gl.bindTexture(gl.TEXTURE_2D, graphFramebuffer.texture);
 
         // reset framebuffers
         gl.useProgram(resetPrg.program);
@@ -382,26 +387,33 @@
 
             // render to final scene ------------------------------------------
             gl.enable(gl.BLEND);
-            gl.bindFramebuffer(gl.FRAMEBUFFER, outFramebuffer.framebuffer);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, sceneFramebuffer.framebuffer);
             gl.clearColor(0.0, 0.0, 0.0, 1.0);
             gl.clearDepth(1.0);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             gl.viewport(0, 0, FRAMEBUFFER_RESOLUTION, FRAMEBUFFER_RESOLUTION);
 
+            gl.useProgram(scenePrg.program);
+            setAttribute(pointVBO, scenePrg.attLocation, scenePrg.attStride);
+            mat.identity(mMatrix);
+            mat.scale(mMatrix, [soundData, soundData, soundData], mMatrix);
+            mat.multiply(vpMatrix, mMatrix, mvpMatrix);
+            gl[scenePrg.uniType[0]](scenePrg.uniLocation[0], false, mvpMatrix);
+            gl[scenePrg.uniType[1]](scenePrg.uniLocation[1], POINT_SIZE);
+            gl[scenePrg.uniType[2]](scenePrg.uniLocation[2], POSITION_BUFFER_INDEX + targetBufferIndex);
+            gl[scenePrg.uniType[3]](scenePrg.uniLocation[3], POINT_COLOR);
+            gl.drawArrays(gl.POINTS, 0, POINT_RESOLUTION * POINT_RESOLUTION);
+
+            // render to graph
+            gl.disable(gl.BLEND);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, graphFramebuffer.framebuffer);
+            gl.clearColor(0.0, 0.0, 0.0, 1.0);
+            gl.clearDepth(1.0);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            gl.viewport(0, 0, FRAMEBUFFER_RESOLUTION, FRAMEBUFFER_RESOLUTION);
             // push and render
             switch(mode){
                 case 0:
-                    gl.useProgram(scenePrg.program);
-                    setAttribute(pointVBO, scenePrg.attLocation, scenePrg.attStride);
-                    mat.identity(mMatrix);
-                    mat.scale(mMatrix, [soundData, soundData, soundData], mMatrix);
-                    mat.multiply(vpMatrix, mMatrix, mvpMatrix);
-                    gl[scenePrg.uniType[0]](scenePrg.uniLocation[0], false, mvpMatrix);
-                    gl[scenePrg.uniType[1]](scenePrg.uniLocation[1], POINT_SIZE);
-                    gl[scenePrg.uniType[2]](scenePrg.uniLocation[2], POSITION_BUFFER_INDEX + targetBufferIndex);
-                    gl[scenePrg.uniType[3]](scenePrg.uniLocation[3], POINT_COLOR);
-                    gl.drawArrays(gl.POINTS, 0, POINT_RESOLUTION * POINT_RESOLUTION);
-                    break;
                 case 1:
                     gl.useProgram(graphPrg.program);
                     setAttribute(planeTexCoordVBO, graphPrg.attLocation, graphPrg.attStride, planeIBO);
@@ -420,8 +432,9 @@
             gl[pastePrg.uniType[0]](pastePrg.uniLocation[0], [canvasWidth, canvasHeight]);
             gl[pastePrg.uniType[1]](pastePrg.uniLocation[1], mouse);
             gl[pastePrg.uniType[2]](pastePrg.uniLocation[2], nowTime);
-            gl[pastePrg.uniType[3]](pastePrg.uniLocation[3], 6);
-            gl[pastePrg.uniType[4]](pastePrg.uniLocation[4], 5);
+            gl[pastePrg.uniType[3]](pastePrg.uniLocation[3], 5);
+            gl[pastePrg.uniType[4]](pastePrg.uniLocation[4], 6);
+            gl[pastePrg.uniType[5]](pastePrg.uniLocation[5], 7);
             gl.drawElements(gl.TRIANGLES, planeIndex.length, gl.UNSIGNED_SHORT, 0);
 
             gl.flush();

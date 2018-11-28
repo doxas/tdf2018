@@ -37,7 +37,7 @@ vec3 genNormal(vec3 p){
     ));
 }
 
-void main(){
+vec3 march(){
     vec2 p = (gl_FragCoord.xy * 2.0 - resolution) / min(resolution.x, resolution.y);
     vec3 v = normalize(vec3(p, -1.0));
     vec3 o = vec3(0.0, 0.0, -time * 0.25);
@@ -56,5 +56,11 @@ void main(){
         vec3 n = genNormal(o);
         f = (dot(n, normalize(vec3(0.5))) + 1.0) * 0.5;
     }
-    gl_FragColor = vec4(vec3(f * it) * abs(v.yzx) * 2.5 + vec3(p, 1.0) * 0.25, 1.0);
+    return vec3(f * it) * abs(v.yzx) * 2.5 + vec3(p, 1.0) * 0.25;
 }
+
+void main(){
+    vec3 dest = march();
+    gl_FragColor = vec4(dest, 1.0);
+}
+
