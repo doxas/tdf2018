@@ -1,7 +1,8 @@
 
 (() => {
     let canvas, canvasWidth, canvasHeight;
-    let gl, ext, run, mouse = [0.0, 0.0];
+    let gl, ext, run, mode = 0;
+    let mouse = [0.0, 0.0];
     let textures = [];
     let mat = new matIV();
     let audio = new gl3Audio(0.3, 0.5);
@@ -40,9 +41,12 @@
                 // console.log(mouse);
             }, false);
             window.addEventListener('keydown', (eve) => {
-                run = eve.keyCode !== 27;
+                run = eve.key !== 'Escape';
                 if(run !== true){
                     // audio.src[0].stop();
+                }
+                if(eve.key === 'Enter'){
+                    mode = (mode + 1) % 2;
                 }
             }, false);
         }
@@ -196,7 +200,7 @@
         graphPrg.attStride[0]   = 3;
         graphPrg.attStride[1]   = 2;
         graphPrg.uniLocation[0] = gl.getUniformLocation(graphPrg.program, 'resolution');
-        graphPrg.uniLocation[1] = gl.getUniformLocation(graphPrg.program, 'globalTime');
+        graphPrg.uniLocation[1] = gl.getUniformLocation(graphPrg.program, 'time');
         graphPrg.uniType[0]     = 'uniform2fv';
         graphPrg.uniType[1]     = 'uniform1f';
 
@@ -344,7 +348,8 @@
             for(let i = 0; i < 16; ++i){
                 soundData += (audio.src[0].onData[i] / 255.0) * 0.1;
             }
-            let isMouseDown = soundData > 1.8;
+            // let isMouseDown = soundData > 1.8;
+            let isMouseDown = true;
 
             nowTime = (Date.now() - startTime) / 1000;
             ++loopCount;
@@ -384,23 +389,27 @@
             gl.viewport(0, 0, FRAMEBUFFER_RESOLUTION, FRAMEBUFFER_RESOLUTION);
 
             // push and render
-            gl.useProgram(scenePrg.program);
-            setAttribute(pointVBO, scenePrg.attLocation, scenePrg.attStride);
-            mat.identity(mMatrix);
-            mat.scale(mMatrix, [soundData, soundData, soundData], mMatrix);
-            mat.multiply(vpMatrix, mMatrix, mvpMatrix);
-            gl[scenePrg.uniType[0]](scenePrg.uniLocation[0], false, mvpMatrix);
-            gl[scenePrg.uniType[1]](scenePrg.uniLocation[1], POINT_SIZE);
-            gl[scenePrg.uniType[2]](scenePrg.uniLocation[2], POSITION_BUFFER_INDEX + targetBufferIndex);
-            gl[scenePrg.uniType[3]](scenePrg.uniLocation[3], POINT_COLOR);
-            gl.drawArrays(gl.POINTS, 0, POINT_RESOLUTION * POINT_RESOLUTION);
-
-            // graph render
-            gl.useProgram(graphPrg.program);
-            setAttribute(planeTexCoordVBO, graphPrg.attLocation, graphPrg.attStride, planeIBO);
-            gl[graphPrg.uniType[0]](graphPrg.uniLocation[0], [FRAMEBUFFER_RESOLUTION, FRAMEBUFFER_RESOLUTION]);
-            gl[graphPrg.uniType[1]](graphPrg.uniLocation[1], nowTime);
-            gl.drawElements(gl.TRIANGLES, planeIndex.length, gl.UNSIGNED_SHORT, 0);
+            switch(mode){
+                case 0:
+                    gl.useProgram(scenePrg.program);
+                    setAttribute(pointVBO, scenePrg.attLocation, scenePrg.attStride);
+                    mat.identity(mMatrix);
+                    mat.scale(mMatrix, [soundData, soundData, soundData], mMatrix);
+                    mat.multiply(vpMatrix, mMatrix, mvpMatrix);
+                    gl[scenePrg.uniType[0]](scenePrg.uniLocation[0], false, mvpMatrix);
+                    gl[scenePrg.uniType[1]](scenePrg.uniLocation[1], POINT_SIZE);
+                    gl[scenePrg.uniType[2]](scenePrg.uniLocation[2], POSITION_BUFFER_INDEX + targetBufferIndex);
+                    gl[scenePrg.uniType[3]](scenePrg.uniLocation[3], POINT_COLOR);
+                    gl.drawArrays(gl.POINTS, 0, POINT_RESOLUTION * POINT_RESOLUTION);
+                    break;
+                case 1:
+                    gl.useProgram(graphPrg.program);
+                    setAttribute(planeTexCoordVBO, graphPrg.attLocation, graphPrg.attStride, planeIBO);
+                    gl[graphPrg.uniType[0]](graphPrg.uniLocation[0], [FRAMEBUFFER_RESOLUTION, FRAMEBUFFER_RESOLUTION]);
+                    gl[graphPrg.uniType[1]](graphPrg.uniLocation[1], nowTime);
+                    gl.drawElements(gl.TRIANGLES, planeIndex.length, gl.UNSIGNED_SHORT, 0);
+                    break;
+            }
 
             // render to canvas -----------------------------------------------
             gl.disable(gl.BLEND);
