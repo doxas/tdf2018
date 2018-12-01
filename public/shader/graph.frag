@@ -4,6 +4,7 @@
 precision mediump float;
 uniform vec2  resolution;     // resolution (width, height)
 uniform float time;           // time       (1second == 1.0)
+uniform int   scene;
 
 const float EPS = 0.001;
 const float PI = 3.1415926;
@@ -237,16 +238,15 @@ void scene0(vec2 p, inout its v){
     sushi(p - vec2(0.5, 0.0), v);
     maguro(p, v);
     slash(p, vec2(0.1, 1.0), GREEN, v);
-    v.col = vec3(0.0);
 }
 
 void scene1(vec2 p, inout its v){
-    vec2 q = vec2(p.x, mod(p.y + time * 0.3, 4.0) - 2.0);
-    if(time < 8.0){
+    vec2 q = vec2(p.x, mod(p.y + time * 0.3 + 6.0, 4.0) - 2.0);
+    if(time > 6.5 && time < 14.0){
         shoumenninja(q, v);
     }
-    if(time > 7.5){
-        float t = time - 7.5;
+    if(time > 13.5){
+        float t = time - 13.5;
         for(int i = 0; i < 5; ++i){
             float f = float(i) * 0.2;
             float x = max(3.0 - t * 5.0 + f, -2.0);
@@ -268,7 +268,11 @@ void main(){
     p = vec2(p.x, -p.y);
     its v; v.len = 0.0, v.col = vec3(0.0);
 
-    scene1(p, v);
+    if(scene == 0){
+        scene1(p, v);
+    }else{
+        scene0(p, v);
+    }
 
     gl_FragColor = vec4(v.col, 1.0);
 }

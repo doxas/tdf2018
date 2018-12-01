@@ -193,7 +193,7 @@ class AudioSrc {
     /**
      * オーディオを再生する
      */
-    play(){
+    play(offset = 0){
         let i, j, k;
         let self = this;
         i = this.bufferSource.length;
@@ -232,7 +232,7 @@ class AudioSrc {
             this.node.onaudioprocess = (eve) => {onprocessEvent(eve);};
         }
         this.bufferSource[k].connect(this.gain);
-        this.bufferSource[k].start(0);
+        this.bufferSource[k].start(0, offset);
         this.bufferSource[k].playnow = true;
 
         function onprocessEvent(eve){

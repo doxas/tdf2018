@@ -1,13 +1,15 @@
 
 (() => {
     let canvas, canvasWidth, canvasHeight;
-    let gl, ext, run, mode = 0;
+    let gl, ext, run, mode = 0, scene = 0;
     let mouse = [0.0, 0.0];
     let textures = [];
     let mat = new matIV();
     let audio = new gl3Audio(0.3, 0.5);
+    let totalTime = 0;
     let startTime = 0;
     let nowTime = 0;
+    let totalNowTime = 0;
     let loopCount = 0;
 
     let scenePrg;
@@ -157,7 +159,7 @@
     }, false);
 
     function loadSound(){
-        audio.load('sound/background.mp3', 0, true, true, init);
+        audio.load('sound/background.mp3', 0, false, true, init);
     }
 
     function init(){
@@ -207,8 +209,10 @@
         graphPrg.attStride[1]   = 2;
         graphPrg.uniLocation[0] = gl.getUniformLocation(graphPrg.program, 'resolution');
         graphPrg.uniLocation[1] = gl.getUniformLocation(graphPrg.program, 'time');
+        graphPrg.uniLocation[2] = gl.getUniformLocation(graphPrg.program, 'scene');
         graphPrg.uniType[0]     = 'uniform2fv';
         graphPrg.uniType[1]     = 'uniform1f';
+        graphPrg.uniType[2]     = 'uniform1i';
 
         positionPrg.attLocation[0] = gl.getAttribLocation(positionPrg.program, 'position');
         positionPrg.attStride[0]   = 3;
@@ -347,12 +351,12 @@
 
         audio.src[0].play();
 
-        setTimeout(() => {
-            startTime = Date.now();
-            nowTime = 0;
-            loopCount = 0;
-            render();
-        }, 6000);
+        totalTime = Date.now();
+        startTime = Date.now();
+        nowTime = 0;
+        totalNowTime = 0;
+        loopCount = 0;
+        render();
 
         function render(){
             // update sound ---------------------------------------------------
@@ -365,9 +369,22 @@
             let isMouseDown = true;
 
             nowTime = (Date.now() - startTime) / 1000;
+            totalNowTime = (Date.now() - totalTime) / 1000;
             ++loopCount;
             let targetBufferIndex = loopCount % 2;
             let prevBufferIndex = 1 - targetBufferIndex;
+
+            switch(true){
+                case totalNowTime < 6.0:
+                    scene = 1;
+                    break;
+                case totalNowTime < 14.75:
+                    scene = 0;
+                    break;
+                default:
+                    scene = 1;
+                    break;
+            }
 
             // update gpgpu buffers -------------------------------------------
             gl.disable(gl.BLEND);
@@ -420,16 +437,12 @@
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             gl.viewport(0, 0, FRAMEBUFFER_RESOLUTION, FRAMEBUFFER_RESOLUTION);
             // push and render
-            switch(mode){
-                case 0:
-                case 1:
-                    gl.useProgram(graphPrg.program);
-                    setAttribute(planeTexCoordVBO, graphPrg.attLocation, graphPrg.attStride, planeIBO);
-                    gl[graphPrg.uniType[0]](graphPrg.uniLocation[0], [FRAMEBUFFER_RESOLUTION, FRAMEBUFFER_RESOLUTION]);
-                    gl[graphPrg.uniType[1]](graphPrg.uniLocation[1], nowTime);
-                    gl.drawElements(gl.TRIANGLES, planeIndex.length, gl.UNSIGNED_SHORT, 0);
-                    break;
-            }
+            gl.useProgram(graphPrg.program);
+            setAttribute(planeTexCoordVBO, graphPrg.attLocation, graphPrg.attStride, planeIBO);
+            gl[graphPrg.uniType[0]](graphPrg.uniLocation[0], [FRAMEBUFFER_RESOLUTION, FRAMEBUFFER_RESOLUTION]);
+            gl[graphPrg.uniType[1]](graphPrg.uniLocation[1], nowTime);
+            gl[graphPrg.uniType[2]](graphPrg.uniLocation[2], scene);
+            gl.drawElements(gl.TRIANGLES, planeIndex.length, gl.UNSIGNED_SHORT, 0);
 
             // render to canvas -----------------------------------------------
             gl.disable(gl.BLEND);
