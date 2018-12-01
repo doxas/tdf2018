@@ -315,6 +315,16 @@ void scene5(vec2 p, inout its v){
     }
 }
 
+void scene6(vec2 p, inout its v){
+    vec2 q = rotate(p, sin(time) * 0.2);
+    float f = 0.1 - abs(cos(time * 5.0) * 0.1);
+    q.y += f;
+    q /= (1.0 - f);
+    sunrise(p - vec2(0.0), 10.0, time, RED, YELLOW, v);
+    maguro(q, v);
+}
+
+
 void main(){
     vec2 p = (gl_FragCoord.xy * 2.0 - resolution) / min(resolution.x, resolution.y);
     p = vec2(p.x, -p.y);
@@ -330,6 +340,8 @@ void main(){
         scene4(p, v);
     }else if(scene == 5){
         scene5(p, v);
+    }else if(scene == 6){
+        scene6(p, v);
     }else{
         scene0(p, v);
     }
