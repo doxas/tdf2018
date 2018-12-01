@@ -14,5 +14,6 @@ html, body {
 }
 
 canvas {
+    background-color: black;
     margin: 0px auto;
 }
