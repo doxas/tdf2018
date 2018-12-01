@@ -272,17 +272,36 @@ void scene2(vec2 p, inout its v){
     shoumenninja(q, v);
 }
 
+void scene3(vec2 p, inout its v){
+    float t = floor(time / 0.5) * 0.5;
+    float n = srnd(vec2(t));
+    vec2 q = mod(p * (3.0 + n), 2.0) - 1.0;
+    shoumenninja(q * 0.9, v);
+}
+
+void scene4(vec2 p, inout its v){
+    float s = floor((time * 2.0) / 1.0) * 1.0;
+    float t = floor(time / 0.5) * 0.5;
+    float n = srnd(vec2(t));
+    float o = srnd(vec2(t));
+    vec2 r = rotate(p, o * PI2);
+    vec2 q = mod(r * (7.0 + n * 5.0), 2.0) - 1.0;
+    shoumenninja(q * 0.9, v);
+}
+
 void main(){
     vec2 p = (gl_FragCoord.xy * 2.0 - resolution) / min(resolution.x, resolution.y);
     p = vec2(p.x, -p.y);
     its v; v.len = 0.0, v.col = vec3(0.0);
 
-    if(scene == 0){
+    if(scene == 1){
         scene1(p, v);
-    }else if(scene == 1){
-        scene2(p, v);
     }else if(scene == 2){
-        // scene3(p, v);
+        scene2(p, v);
+    }else if(scene == 3){
+        scene3(p, v);
+    }else if(scene == 4){
+        scene4(p, v);
     }else{
         scene0(p, v);
     }

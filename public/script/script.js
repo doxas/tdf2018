@@ -372,19 +372,22 @@
 
             switch(true){
                 case nowTime < 6.0:
-                    scene = -1;
-                    break;
-                case nowTime < 14.75:
                     scene = 0;
                     break;
-                case nowTime < 22.0:
+                case nowTime < 14.75:
                     scene = 1;
                     break;
-                case nowTime < 25.5:
+                case nowTime < 22.0:
                     scene = 2;
                     break;
+                case nowTime < 25.5:
+                    scene = 3;
+                    break;
+                case nowTime < 29.0:
+                    scene = 4;
+                    break;
                 default:
-                    scene = -1;
+                    scene = 0;
                     break;
             }
 
