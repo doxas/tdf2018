@@ -47,6 +47,7 @@ const vec3 DARK_RED = vec3(0.5, 0.05, 0.01);
 
 void main(){
     vec2 p = (gl_FragCoord.xy * 2.0 - resolution) / min(resolution.x, resolution.y);
+    p.y += mod(time, 3.0) - 1.5;
     its v; v.len = 0.0, v.col = vec3(0.0);
     float as = abs(sin(time * 5.0) * 0.02);
 
@@ -86,7 +87,7 @@ void main(){
 
 
     gl_FragColor = vec4(v.col, 1.0);
-    gl_FragColor = vec4(1.0);
+    // gl_FragColor = vec4(1.0);
 }
 
 
