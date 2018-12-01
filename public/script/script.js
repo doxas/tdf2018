@@ -346,7 +346,7 @@
         // setting
         run = true;
 
-        let offsettime = 14.75;
+        let offsettime = 29.0;
 
         audio.src[0].play(offsettime);
 
@@ -385,6 +385,9 @@
                     break;
                 case nowTime < 29.0:
                     scene = 4;
+                    break;
+                case nowTime < 37.0:
+                    scene = 5;
                     break;
                 default:
                     scene = 0;

@@ -289,6 +289,32 @@ void scene4(vec2 p, inout its v){
     shoumenninja(q * 0.9, v);
 }
 
+void scene5(vec2 p, inout its v){
+    vec2 q = vec2(
+        p.x - max(2.0 - (time - 29.0) * 0.35, -2.0) - abs(sin(time * 5.0)) * 0.1,
+        p.y
+    );
+    if(time < 36.0){
+        nanameninja(q, v);
+    }
+    if(time > 35.5){
+        float t = time - 35.5;
+        for(int i = 0; i < 5; ++i){
+            float f = float(i) * 0.2;
+            float x = max(3.0 - t * 5.0 + f, -2.0);
+            vec2 r = vec2(x, 0.0);
+            vec3 h = hsv(f, 1.0, 1.0);
+            gradationbox(-p + vec2(x, f * 2.0 - 0.8), vec2(2.0, 0.2), 1.0, 0.0, h, v, 0.0);
+        }
+        for(int i = 0; i < 5; ++i){
+            float f = float(i) * 0.2;
+            float x = max(1.0 - t * 5.0 + f, -2.0);
+            vec2 r = vec2(x, f * 2.0 - 0.8);
+            shuriken(p - r, float(i + 1), v);
+        }
+    }
+}
+
 void main(){
     vec2 p = (gl_FragCoord.xy * 2.0 - resolution) / min(resolution.x, resolution.y);
     p = vec2(p.x, -p.y);
@@ -302,6 +328,8 @@ void main(){
         scene3(p, v);
     }else if(scene == 4){
         scene4(p, v);
+    }else if(scene == 5){
+        scene5(p, v);
     }else{
         scene0(p, v);
     }
