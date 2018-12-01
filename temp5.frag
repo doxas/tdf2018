@@ -87,9 +87,9 @@ void main(){
     float as = abs(sin(time * 5.0) * 0.02);
 
 	// ss
-//    box       (p - vec2(0.0), vec2(0.6, 0.1), 0.15, 0.0, WHITE, v, 0.5);
-    arcbox_m   (p - vec2(0.0), vec2(0.8, 0.0), 0.15, 0.0, RED, v, 0.5, 3.0);
-//    circle    (p - vec2(0.0), vec2(0.9, 0.95), 0.25, 0.0, RED, v);
+    circle    (p - vec2(0.0), vec2(0.9, 0.95), 0.25, 0.0, YELLOW, v);
+    box       (p - vec2(0.0, -0.02), vec2(0.6, 0.1), 0.15, 0.0, WHITE, v, 0.5);
+    arcbox_m   (p - vec2(0.0, 0.05), vec2(0.8, 0.0), 0.15, 0.0, RED, v, 0.5, 3.0);
 
     gl_FragColor = vec4(v.col, 1.0);
 //    gl_FragColor = vec4(1.0);
