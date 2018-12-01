@@ -6,10 +6,8 @@
     let textures = [];
     let mat = new matIV();
     let audio = new gl3Audio(0.3, 0.5);
-    let totalTime = 0;
     let startTime = 0;
     let nowTime = 0;
-    let totalNowTime = 0;
     let loopCount = 0;
 
     let scenePrg;
@@ -347,14 +345,13 @@
 
         // setting
         run = true;
-        render();
 
-        audio.src[0].play();
+        let offsettime = 14.75;
 
-        totalTime = Date.now();
+        audio.src[0].play(offsettime);
+
         startTime = Date.now();
         nowTime = 0;
-        totalNowTime = 0;
         loopCount = 0;
         render();
 
@@ -368,21 +365,26 @@
             // let isMouseDown = soundData > 1.8;
             let isMouseDown = true;
 
-            nowTime = (Date.now() - startTime) / 1000;
-            totalNowTime = (Date.now() - totalTime) / 1000;
+            nowTime = (Date.now() - startTime) / 1000 + offsettime;
             ++loopCount;
             let targetBufferIndex = loopCount % 2;
             let prevBufferIndex = 1 - targetBufferIndex;
 
             switch(true){
-                case totalNowTime < 6.0:
-                    scene = 1;
+                case nowTime < 6.0:
+                    scene = -1;
                     break;
-                case totalNowTime < 14.75:
+                case nowTime < 14.75:
                     scene = 0;
                     break;
-                default:
+                case nowTime < 22.0:
                     scene = 1;
+                    break;
+                case nowTime < 25.5:
+                    scene = 2;
+                    break;
+                default:
+                    scene = -1;
                     break;
             }
 
