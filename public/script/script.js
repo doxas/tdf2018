@@ -6,6 +6,9 @@
     let textures = [];
     let mat = new matIV();
     let audio = new gl3Audio(0.3, 0.5);
+    let startTime = 0;
+    let nowTime = 0;
+    let loopCount = 0;
 
     let scenePrg;
     let resetPrg;
@@ -43,7 +46,8 @@
             window.addEventListener('keydown', (eve) => {
                 run = eve.key !== 'Escape';
                 if(run !== true){
-                    // audio.src[0].stop();
+                    audio.src[0].stop();
+                    console.log(nowTime);
                 }
                 if(eve.key === 'Enter'){
                     mode = (mode + 1) % 2;
@@ -338,13 +342,17 @@
         gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE, gl.ONE, gl.ONE);
 
         // setting
-        let startTime = Date.now();
-        let nowTime = 0;
-        let loopCount = 0;
         run = true;
         render();
 
-        // audio.src[0].play();
+        audio.src[0].play();
+
+        setTimeout(() => {
+            startTime = Date.now();
+            nowTime = 0;
+            loopCount = 0;
+            render();
+        }, 6000);
 
         function render(){
             // update sound ---------------------------------------------------
