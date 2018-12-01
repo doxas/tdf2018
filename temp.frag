@@ -87,6 +87,17 @@ const vec3 RED = vec3(0.8, 0.1, 0.0);
 const vec3 YELLOW = vec3(0.8, 0.8, 0.0);
 const vec3 DARK_RED = vec3(0.5, 0.05, 0.01);
 
+void shuriken(vec2 p, inout its v){
+    vec2 tp = rotate(p, time);
+    triangle  (tp - vec2(0.0, 0.5), vec2(0.25, 1.0), 0.5, 0.0, WHITE, v);
+    triangle  (tp - vec2(0.0, -0.5), vec2(0.25, 1.0), 0.5, PI, WHITE, v);
+    triangle  (tp - vec2(0.5, 0.0), vec2(0.25, 1.0), 0.5, PIH, WHITE, v);
+    triangle  (tp - vec2(-0.5, 0.0), vec2(0.25, 1.0), 0.5, PI + PIH, WHITE, v);
+    circle    (p - vec2(0.0), vec2(1.0), 0.2, 0.0, GRAY, v);
+    circle    (p - vec2(0.0), vec2(1.0), 0.16, 0.0, SILVER, v);
+    circle    (p - vec2(0.0), vec2(1.0), 0.06, 0.0, WHITE, v);
+}
+
 void shoumenninja(vec2 p, inout its v){
     float as = abs(sin(time * 5.0) * 0.02);
     // maf
@@ -161,11 +172,18 @@ void nanameninja(vec2 p, inout its v){
 
 void main(){
     vec2 p = (gl_FragCoord.xy * 2.0 - resolution) / min(resolution.x, resolution.y);
-    vec2 tp = rotate(p, time);
     its v; v.len = 0.0, v.col = vec3(0.0);
     
+   	// ribbon
+	for(int i = 0; i < 5; ++i){
+		float o = float(i) / 5.0;
+		vec3 h = hsv(o, 1.0, 1.0);
+	    gradationbox(-p - vec2(0.0 - sin(time + o) * 2.0, o * 2.0 - 0.8), vec2(2.0, 0.2), 1.0, 0.0, h, v, 0.0);
+	}
+
 	// shoumenninja(p, v);
 	nanameninja(p, v);
+	shuriken(p - vec2(-0.5, 0.0), v);
 	
     gl_FragColor = vec4(v.col, 1.0);
     // gl_FragColor = vec4(1.0);
