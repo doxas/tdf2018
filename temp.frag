@@ -85,7 +85,16 @@ const vec3 GRAY = vec3(0.4, 0.4, 0.4);
 const vec3 BLACK = vec3(0.15, 0.15, 0.15);
 const vec3 RED = vec3(0.8, 0.1, 0.0);
 const vec3 YELLOW = vec3(0.8, 0.8, 0.0);
+const vec3 GREEN = vec3(0.2, 0.7, 0.2);
 const vec3 DARK_RED = vec3(0.5, 0.05, 0.01);
+
+void sushi(vec2 p, inout its v){
+    circle    (p - vec2(0.0), vec2(0.9, 0.9), 0.25, 0.0, GREEN, v);
+    circle    (p - vec2(0.0), vec2(0.8, 0.8), 0.25, 0.0, SILVER, v);
+    circle    (p - vec2(0.0), vec2(0.7, 0.7), 0.25, 0.0, GREEN, v);
+    box       (p - vec2(0.0, -0.02), vec2(0.6, 0.1), 0.125, 0.0, WHITE, v, 0.5);
+    arcbox_m   (p - vec2(0.0, 0.05), vec2(0.8, -0.1), 0.15, 0.0, RED, v, 0.5, 3.0);
+}
 
 void shuriken(vec2 p, inout its v){
     vec2 tp = rotate(p, time);
@@ -174,6 +183,9 @@ void main(){
     vec2 p = (gl_FragCoord.xy * 2.0 - resolution) / min(resolution.x, resolution.y);
     its v; v.len = 0.0, v.col = vec3(0.0);
     
+	// sunlise
+    sunrise(p - vec2(0.0), 10.0, time, RED, YELLOW, v);
+    
    	// ribbon
 	for(int i = 0; i < 5; ++i){
 		float o = float(i) / 5.0;
@@ -184,6 +196,7 @@ void main(){
 	// shoumenninja(p, v);
 	nanameninja(p, v);
 	shuriken(p - vec2(-0.5, 0.0), v);
+	sushi(p - vec2(0.5, 0.0), v);
 	
     gl_FragColor = vec4(v.col, 1.0);
     // gl_FragColor = vec4(1.0);
