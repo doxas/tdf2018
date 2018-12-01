@@ -21,7 +21,7 @@ vec2 rotate(vec2 p, float angle){
 }
 
 void circle(vec2 p, vec2 q, float s, float angle, vec3 color, inout its i){
-	vec2 v = rotate(p / q, angle);
+	vec2 v = rotate(p, angle) / q;
 	float len = length(v) - s;
 	if(len < EPS){i.col = color;}
 }
@@ -43,21 +43,50 @@ const vec3 SILVER = vec3(0.7, 0.7, 0.7);
 const vec3 GRAY = vec3(0.4, 0.4, 0.4);
 const vec3 BLACK = vec3(0.15, 0.15, 0.15);
 const vec3 RED = vec3(0.8, 0.1, 0.0);
+const vec3 DARK_RED = vec3(0.5, 0.05, 0.01);
 
 void main(){
     vec2 p = (gl_FragCoord.xy * 2.0 - resolution) / min(resolution.x, resolution.y);
     its v; v.len = 0.0, v.col = vec3(0.0);
-    circle    (p - vec2(0.0, 0.2), vec2(0.9, 0.95), 0.25, PIH, RED, v);
+
+	for(int i = 0; i < 4; ++i){
+		float st = float(i) / 4.0;
+		float lt = mod(time * 0.5 + PIH * st, PIH) - PIH * 0.5;
+		float ls = sin(-lt - PIH) * 0.185;
+		float lc = cos(-lt - PIH) * 0.185;
+	    box       (p - vec2(0.0, 0.0), vec2(0.05, 1.0), 0.2, lt, DARK_RED, v, 0.0);
+	    circle    (p - vec2(lc, ls), vec2(1.0), 0.025, 0.0, RED, v);
+	}
+
+/*
+    // arms
+    circle    (p - vec2(0.2, 0.0), vec2(0.9, 0.5), 0.1, 1.0, RED, v);
+    circle    (p - vec2(-0.2, 0.05), vec2(0.9, 0.5), 0.1, 0.5, RED, v);
+    
+    // body
+    box       (p - vec2(0.0, 0.0), vec2(0.8, 0.8), 0.085, 0.0, DARK_RED, v, 1.2);
+    
+    // legs
+    box       (p - vec2(0.0, 0.0), vec2(0.8, 0.8), 0.085, 0.0, DARK_RED, v, 1.2);
+    
+    // arms
+    circle    (p - vec2(0.175, -0.05), vec2(0.9, 0.5), 0.1, 0.2, RED, v);
+    circle    (p - vec2(-0.275, 0.025), vec2(0.9, 0.5), 0.1, 2.0, RED, v);
+    
+    // head
+    circle    (p - vec2(0.0, 0.2), vec2(0.9, 0.95), 0.25, 0.0, RED, v);
     triangle  (p - vec2(0.2, 0.5), vec2(0.575, 1.0), 0.25, PIH * 0.5, RED, v);
     box       (p - vec2(0.0, 0.15), vec2(0.8, 0.2), 0.2, 0.0, WHITE, v, 0.2);
-    circle    (p - vec2(0.08, 0.155), vec2(0.5, 1.0), 0.0525, PIH, BLACK, v);
-    circle    (p - vec2(-0.08, 0.155), vec2(0.5, 1.0), 0.0525, PIH, BLACK, v);
+    circle    (p - vec2(0.08, 0.155), vec2(0.5, 1.0), 0.0525, 0.0, BLACK, v);
+    circle    (p - vec2(-0.08, 0.155), vec2(0.5, 1.0), 0.0525, 0.0, BLACK, v);
     box       (p - vec2(0.0, 0.25), vec2(0.95, 0.25), 0.2, 0.0, SILVER, v, 0.1);
     box       (p - vec2(0.0, 0.25), vec2(1.0, 0.225), 0.17, 0.0, GRAY, v, 0.1);
     circle    (p - vec2(0.0, 0.25), vec2(1.0, 1.0), 0.02, PIH, WHITE, v);
     circle    (p - vec2(0.1, 0.25), vec2(1.0, 1.0), 0.02, PIH, WHITE, v);
     circle    (p - vec2(-0.1, 0.25), vec2(1.0, 1.0), 0.02, PIH, WHITE, v);
+*/
     gl_FragColor = vec4(v.col, 1.0);
+    // gl_FragColor = vec4(1.0);
 }
 
 
