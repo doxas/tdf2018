@@ -20,6 +20,14 @@ vec3 hsv(float h, float s, float v){
     return v * mix(vec3(t.x), clamp(p - vec3(t.x), 0.0, 1.0), s);
 }
 
+float rnd(vec2 p){
+    return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453123);
+}
+
+float srnd(vec2 p){
+    return rnd(p) * 2.0 - 1.0;
+}
+
 vec2 rotate(vec2 p, float angle){
 	float s = sin(angle);
 	float c = cos(angle);
@@ -103,6 +111,11 @@ void gradationbox(vec2 p, vec2 q, float s, float angle, vec3 color, inout its i,
 	float g = ((v.x + 1.0) * 0.5);
 	float len = length(max(abs(v) - q, 0.0)) - ro;
 	if(len < EPS){i.col = color * g;}
+}
+
+void slash(vec2 p, vec2 q, vec3 color, inout its i){
+	float len = abs(p.x / q.x) + abs(p.y / q.y) - 0.5;
+	if(len < EPS){i.col = color;}
 }
 
 void maguro(vec2 p, inout its v){
@@ -230,6 +243,8 @@ void main(){
 	// sushi(p - vec2(0.5, 0.0), v);
 	
 	maguro(p, v);
+    
+    slash(p, vec2(0.1, 1.0), GREEN, v);
 	
     gl_FragColor = vec4(v.col, 1.0);
     // gl_FragColor = vec4(1.0);
