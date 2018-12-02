@@ -9,7 +9,7 @@
     let pastePrg;
     let graphPrg;
 
-    const DEBUG_MODE = true;
+    const DEBUG_MODE = false;
 
     const FRAMEBUFFER_RESOLUTION = 128;
 
