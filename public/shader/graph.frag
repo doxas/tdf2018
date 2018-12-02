@@ -154,7 +154,7 @@ void shuriken(vec2 p, float s, inout its v){
 }
 
 void shoumenninja(vec2 p, inout its v){
-    float as = abs(sin(time * 5.0) * 0.02);
+    float as = abs(sin(time * 5.0) * 0.05);
     // maf
     wavetriangle (p - vec2(0.1, 0.2), vec2(0.2, 1.0), 0.65, -PI - 0.3, YELLOW, v);
     // legs
@@ -189,7 +189,7 @@ void shoumenninja(vec2 p, inout its v){
 }
 
 void nanameninja(vec2 p, inout its v){
-    float as = abs(sin(time * 5.0) * 0.02);
+    float as = abs(sin(time * 5.0) * 0.05);
     // legs
     vec2 lp = rotate(p, -0.25);
     for(int i = 0; i < 4; ++i){
@@ -225,6 +225,24 @@ void nanameninja(vec2 p, inout its v){
     circle    (p - vec2(-0.19, 0.25), vec2(1.0, 1.0), 0.02, PIH, WHITE, v);
 }
 
+void smileninja(vec2 p, inout its v){
+    // maf
+    vec2 q = vec2(p.x, p.y + 0.3) * 0.75;
+    wavetriangle (q - vec2(0.1, 0.0), vec2(0.2, 1.0), 0.65, -PI - 0.3, YELLOW, v);
+    // head
+    circle    (q - vec2(0.0, 0.2), vec2(0.9, 0.95), 0.25, 0.0, RED, v);
+    triangle  (q - vec2(0.2, 0.5), vec2(0.575, 1.0), 0.25, PIH * 0.5, RED, v);
+    box       (q - vec2(0.0, 0.15), vec2(0.8, 0.2), 0.2, 0.0, WHITE, v, 0.2);
+    circle    (q - vec2(0.08, 0.155), vec2(0.5, 1.0), 0.0525, 0.0, BLACK, v);
+    box       (q - vec2(-0.075, 0.155), vec2(1.0, 0.25), 0.035, 0.5, BLACK, v, 0.1);
+    box       (q - vec2(-0.075, 0.125), vec2(1.0, 0.25), 0.035, -0.5, BLACK, v, 0.1);
+    box       (q - vec2(0.0, 0.25), vec2(0.95, 0.25), 0.2, 0.0, SILVER, v, 0.1);
+    box       (q - vec2(0.0, 0.25), vec2(1.0, 0.225), 0.17, 0.0, GRAY, v, 0.1);
+    circle    (q - vec2(0.0, 0.24), vec2(1.0, 1.0), 0.02, PIH, WHITE, v);
+    circle    (q - vec2(0.1, 0.25), vec2(1.0, 1.0), 0.02, PIH, WHITE, v);
+    circle    (q - vec2(-0.1, 0.25), vec2(1.0, 1.0), 0.02, PIH, WHITE, v);
+}
+
 void scene0(vec2 p, inout its v){
     sunrise(p - vec2(0.0), 10.0, time, RED, YELLOW, v);
     for(int i = 0; i < 5; ++i){
@@ -238,6 +256,7 @@ void scene0(vec2 p, inout its v){
     sushi(p - vec2(0.5, 0.0), v);
     maguro(p, v);
     slash(p, vec2(0.1, 1.0), GREEN, v);
+    v.col = vec3(0.0);
 }
 
 void scene1(vec2 p, inout its v){
@@ -387,6 +406,28 @@ void scene9(vec2 p, inout its v){
     shoumenninja(q * 0.9, v);
 }
 
+void scene10(vec2 p, inout its v){
+    float t = max(time - 68.75, 0.0);
+    vec2 q = rotate(p, sin(time) * 0.2);
+    float f = 0.15 - abs(cos(time * 2.5) * 0.15);
+    q.y -= f;
+    q /= (1.0 + f * 5.0);
+    sunrise(p - vec2(0.0), 10.0, time, BLUE, WHITE, v);
+    sushi(q, v);
+    float s = time - 75.0;
+    if(s > 0.0){
+        vec2 r = vec2(max(2.0 - s * 0.5, -2.0), -0.7);
+        nanameninja(p - r, v);
+    }
+    v.col *= step(length(p) - t, 0.0);
+    float d = 1.0 - max(time - 86.0, 0.0) / (95.0 - 86.0);
+    v.col *= max(d, 0.0);
+}
+
+void scene11(vec2 p, inout its v){
+    smileninja(p, v);
+}
+
 void main(){
     vec2 p = (gl_FragCoord.xy * 2.0 - resolution) / min(resolution.x, resolution.y);
     p = vec2(p.x, -p.y);
@@ -410,6 +451,10 @@ void main(){
         scene8(p, v);
     }else if(scene == 9){
         scene9(p, v);
+    }else if(scene == 10){
+        scene10(p, v);
+    }else if(scene == 11){
+        scene11(p, v);
     }else{
         scene0(p, v);
     }
