@@ -1,30 +1,16 @@
 
 (() => {
     let canvas, canvasWidth, canvasHeight;
-    let gl, ext, run, mode = 0, scene = 0;
-    let mouse = [0.0, 0.0];
-    let textures = [];
-    let mat = new matIV();
-    let audio = new gl3Audio(0.3, 0.5);
+    let gl, ext, run, scene = 0;
+    let audio = new gl3Audio(0.4, 0.5);
     let startTime = 0;
     let nowTime = 0;
-    let loopCount = 0;
 
-    let scenePrg;
-    let resetPrg;
     let pastePrg;
-    let lowresPrg;
     let graphPrg;
-    let positionPrg;
-    let velocityPrg;
 
     const DEBUG_MODE = true;
 
-    const POINT_RESOLUTION       = 32;
-    const POINT_SIZE             = 5.0;
-    const POINT_COLOR            = [1.0, 0.3, 0.8, 0.25];
-    const POSITION_BUFFER_INDEX  = 1;
-    const VELOCITY_BUFFER_INDEX  = 3;
     const FRAMEBUFFER_RESOLUTION = 128;
 
     window.addEventListener('load', () => {
@@ -37,169 +23,61 @@
         // events
         window.addEventListener('resize', setCanvasSize, false);
         if(DEBUG_MODE === true){
-            canvas.addEventListener('mousemove', (eve) => {
-                let x = (eve.clientX / canvasWidth) * 2.0 - 1.0;
-                let y = (eve.clientY / canvasHeight) * 2.0 - 1.0;
-                mouse = [x, -y];
-                // console.log(mouse);
-            }, false);
             window.addEventListener('keydown', (eve) => {
                 run = eve.key !== 'Escape';
                 if(run !== true){
                     audio.src[0].stop();
                     console.log(nowTime);
                 }
-                if(eve.key === 'Enter'){
-                    mode = (mode + 1) % 2;
-                }
             }, false);
         }
 
-        createTexture('./image/lenna.jpg', (textureObject) => {
-            textures[0] = textureObject;
-            loadShaderSource(
-                './shader/scene.vert',
-                './shader/scene.frag',
-                (shader) => {
-                    let vs = createShader(shader.vs, gl.VERTEX_SHADER);
-                    let fs = createShader(shader.fs, gl.FRAGMENT_SHADER);
-                    let prg = createProgram(vs, fs);
-                    if(prg == null){return;}
-                    scenePrg = new ProgramParameter(prg);
-                    loadCheck();
-                }
-            );
-            loadShaderSource(
-                './shader/reset.vert',
-                './shader/reset.frag',
-                (shader) => {
-                    let vs = createShader(shader.vs, gl.VERTEX_SHADER);
-                    let fs = createShader(shader.fs, gl.FRAGMENT_SHADER);
-                    let prg = createProgram(vs, fs);
-                    if(prg == null){return;}
-                    resetPrg = new ProgramParameter(prg);
-                    loadCheck();
-                }
-            );
-            loadShaderSource(
-                './shader/paste.vert',
-                './shader/paste.frag',
-                (shader) => {
-                    let vs = createShader(shader.vs, gl.VERTEX_SHADER);
-                    let fs = createShader(shader.fs, gl.FRAGMENT_SHADER);
-                    let prg = createProgram(vs, fs);
-                    if(prg == null){return;}
-                    pastePrg = new ProgramParameter(prg);
-                    loadCheck();
-                }
-            );
-            loadShaderSource(
-                './shader/lowres.vert',
-                './shader/lowres.frag',
-                (shader) => {
-                    let vs = createShader(shader.vs, gl.VERTEX_SHADER);
-                    let fs = createShader(shader.fs, gl.FRAGMENT_SHADER);
-                    let prg = createProgram(vs, fs);
-                    if(prg == null){return;}
-                    lowresPrg = new ProgramParameter(prg);
-                    loadCheck();
-                }
-            );
-            loadShaderSource(
-                './shader/graph.vert',
-                './shader/graph.frag',
-                (shader) => {
-                    let vs = createShader(shader.vs, gl.VERTEX_SHADER);
-                    let fs = createShader(shader.fs, gl.FRAGMENT_SHADER);
-                    let prg = createProgram(vs, fs);
-                    if(prg == null){return;}
-                    graphPrg = new ProgramParameter(prg);
-                    loadCheck();
-                }
-            );
-            loadShaderSource(
-                './shader/position.vert',
-                './shader/position.frag',
-                (shader) => {
-                    let vs = createShader(shader.vs, gl.VERTEX_SHADER);
-                    let fs = createShader(shader.fs, gl.FRAGMENT_SHADER);
-                    let prg = createProgram(vs, fs);
-                    if(prg == null){return;}
-                    positionPrg = new ProgramParameter(prg);
-                    loadCheck();
-                }
-            );
-            loadShaderSource(
-                './shader/velocity.vert',
-                './shader/velocity.frag',
-                (shader) => {
-                    let vs = createShader(shader.vs, gl.VERTEX_SHADER);
-                    let fs = createShader(shader.fs, gl.FRAGMENT_SHADER);
-                    let prg = createProgram(vs, fs);
-                    if(prg == null){return;}
-                    velocityPrg = new ProgramParameter(prg);
-                    loadCheck();
-                }
-            );
-        });
+        loadShaderSource(
+            './shader/paste.vert',
+            './shader/paste.frag',
+            (shader) => {
+                let vs = createShader(shader.vs, gl.VERTEX_SHADER);
+                let fs = createShader(shader.fs, gl.FRAGMENT_SHADER);
+                let prg = createProgram(vs, fs);
+                if(prg == null){return;}
+                pastePrg = new ProgramParameter(prg);
+                loadCheck();
+            }
+        );
+        loadShaderSource(
+            './shader/graph.vert',
+            './shader/graph.frag',
+            (shader) => {
+                let vs = createShader(shader.vs, gl.VERTEX_SHADER);
+                let fs = createShader(shader.fs, gl.FRAGMENT_SHADER);
+                let prg = createProgram(vs, fs);
+                if(prg == null){return;}
+                graphPrg = new ProgramParameter(prg);
+                loadCheck();
+            }
+        );
         function loadCheck(){
             if(
-                scenePrg != null &&
-                resetPrg != null &&
                 pastePrg != null &&
-                lowresPrg != null &&
                 graphPrg != null &&
-                positionPrg != null &&
-                velocityPrg != null &&
                 true
             ){loadSound();}
         }
     }, false);
 
     function loadSound(){
-        audio.load('sound/background.mp3', 0, false, true, init);
+        audio.load('sound/background.mp3', 0, false, true, () => {
+            setTimeout(init, 3000);
+        });
     }
 
     function init(){
-        scenePrg.attLocation[0] = gl.getAttribLocation(scenePrg.program, 'texCoord');
-        scenePrg.attStride[0]   = 2;
-        scenePrg.uniLocation[0] = gl.getUniformLocation(scenePrg.program, 'mvpMatrix');
-        scenePrg.uniLocation[1] = gl.getUniformLocation(scenePrg.program, 'pointSize');
-        scenePrg.uniLocation[2] = gl.getUniformLocation(scenePrg.program, 'positionTexture');
-        scenePrg.uniLocation[3] = gl.getUniformLocation(scenePrg.program, 'globalColor');
-        scenePrg.uniType[0]     = 'uniformMatrix4fv';
-        scenePrg.uniType[1]     = 'uniform1f';
-        scenePrg.uniType[2]     = 'uniform1i';
-        scenePrg.uniType[3]     = 'uniform4fv';
-
-        resetPrg.attLocation[0] = gl.getAttribLocation(resetPrg.program, 'position');
-        resetPrg.attStride[0]   = 3;
-        resetPrg.uniLocation[0] = gl.getUniformLocation(resetPrg.program, 'resolution');
-        resetPrg.uniType[0]     = 'uniform2fv';
-
         pastePrg.attLocation[0] = gl.getAttribLocation(pastePrg.program, 'position');
         pastePrg.attLocation[1] = gl.getAttribLocation(pastePrg.program, 'texCoord');
         pastePrg.attStride[0]   = 3;
         pastePrg.attStride[1]   = 2;
-        pastePrg.uniLocation[0] = gl.getUniformLocation(pastePrg.program, 'resolution');
-        pastePrg.uniLocation[1] = gl.getUniformLocation(pastePrg.program, 'mouse');
-        pastePrg.uniLocation[2] = gl.getUniformLocation(pastePrg.program, 'globalTime');
-        pastePrg.uniLocation[3] = gl.getUniformLocation(pastePrg.program, 'imageTexture');
-        pastePrg.uniLocation[4] = gl.getUniformLocation(pastePrg.program, 'sceneTexture');
-        pastePrg.uniLocation[5] = gl.getUniformLocation(pastePrg.program, 'graphTexture');
-        pastePrg.uniType[0]     = 'uniform2fv';
-        pastePrg.uniType[1]     = 'uniform2fv';
-        pastePrg.uniType[2]     = 'uniform1f';
-        pastePrg.uniType[3]     = 'uniform1i';
-        pastePrg.uniType[4]     = 'uniform1i';
-        pastePrg.uniType[5]     = 'uniform1i';
-
-        lowresPrg.attLocation[0] = gl.getAttribLocation(lowresPrg.program, 'position');
-        lowresPrg.attLocation[1] = gl.getAttribLocation(lowresPrg.program, 'texCoord');
-        lowresPrg.attStride[0]   = 3;
-        lowresPrg.attStride[1]   = 2;
-        lowresPrg.uniLocation[0] = gl.getUniformLocation(lowresPrg.program, 'imageTexture');
-        lowresPrg.uniType[0]     = 'uniform1i';
+        pastePrg.uniLocation[0] = gl.getUniformLocation(pastePrg.program, 'graphTexture');
+        pastePrg.uniType[0]     = 'uniform1i';
 
         graphPrg.attLocation[0] = gl.getAttribLocation(graphPrg.program, 'position');
         graphPrg.attLocation[1] = gl.getAttribLocation(graphPrg.program, 'texCoord');
@@ -211,42 +89,6 @@
         graphPrg.uniType[0]     = 'uniform2fv';
         graphPrg.uniType[1]     = 'uniform1f';
         graphPrg.uniType[2]     = 'uniform1i';
-
-        positionPrg.attLocation[0] = gl.getAttribLocation(positionPrg.program, 'position');
-        positionPrg.attStride[0]   = 3;
-        positionPrg.uniLocation[0] = gl.getUniformLocation(positionPrg.program, 'prevTexture');
-        positionPrg.uniLocation[1] = gl.getUniformLocation(positionPrg.program, 'velocityTexture');
-        positionPrg.uniLocation[2] = gl.getUniformLocation(positionPrg.program, 'resolution');
-        positionPrg.uniLocation[3] = gl.getUniformLocation(positionPrg.program, 'move');
-        positionPrg.uniType[0]     = 'uniform1i';
-        positionPrg.uniType[1]     = 'uniform1i';
-        positionPrg.uniType[2]     = 'uniform2fv';
-        positionPrg.uniType[3]     = 'uniform1i';
-
-        velocityPrg.attLocation[0] = gl.getAttribLocation(velocityPrg.program, 'position');
-        velocityPrg.attStride[0]   = 3;
-        velocityPrg.uniLocation[0] = gl.getUniformLocation(velocityPrg.program, 'prevTexture');
-        velocityPrg.uniLocation[1] = gl.getUniformLocation(velocityPrg.program, 'positionTexture');
-        velocityPrg.uniLocation[2] = gl.getUniformLocation(velocityPrg.program, 'resolution');
-        velocityPrg.uniLocation[3] = gl.getUniformLocation(velocityPrg.program, 'time');
-        velocityPrg.uniLocation[4] = gl.getUniformLocation(velocityPrg.program, 'move');
-        velocityPrg.uniLocation[5] = gl.getUniformLocation(velocityPrg.program, '');
-        velocityPrg.uniType[0]     = 'uniform1i';
-        velocityPrg.uniType[1]     = 'uniform1i';
-        velocityPrg.uniType[2]     = 'uniform2fv';
-        velocityPrg.uniType[3]     = 'uniform1f';
-        velocityPrg.uniType[4]     = 'uniform1i';
-        velocityPrg.uniType[5]     = 'uniform2fv';
-
-        let pointTexCoord = [];
-        for(let i = 0; i < POINT_RESOLUTION; ++i){
-            let t = i / POINT_RESOLUTION;
-            for(let j = 0; j < POINT_RESOLUTION; ++j){
-                let s = j / POINT_RESOLUTION;
-                pointTexCoord.push(s, t);
-            }
-        }
-        let pointVBO = [createVbo(pointTexCoord)];
 
         // vertices
         let planePosition = [
@@ -271,104 +113,26 @@
             createVbo(planeTexCoord)
         ];
 
-        // matrix
-        let mMatrix      = mat.identity(mat.create());
-        let vMatrix      = mat.identity(mat.create());
-        let pMatrix      = mat.identity(mat.create());
-        let vpMatrix     = mat.identity(mat.create());
-        let mvpMatrix    = mat.identity(mat.create());
-        mat.lookAt([0.0, 0.0, 8.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0], vMatrix);
-        mat.perspective(60, canvasWidth / canvasHeight, 0.1, 20.0, pMatrix);
-        mat.multiply(pMatrix, vMatrix, vpMatrix);
-
-        // framebuffer
-        let positionFramebuffers = [
-            createFramebufferFloat(ext, POINT_RESOLUTION, POINT_RESOLUTION),
-            createFramebufferFloat(ext, POINT_RESOLUTION, POINT_RESOLUTION)
-        ];
-        let velocityFramebuffers = [
-            createFramebufferFloat(ext, POINT_RESOLUTION, POINT_RESOLUTION),
-            createFramebufferFloat(ext, POINT_RESOLUTION, POINT_RESOLUTION)
-        ];
-        let sceneFramebuffer = createFramebuffer(FRAMEBUFFER_RESOLUTION, FRAMEBUFFER_RESOLUTION);
         let graphFramebuffer = createFramebuffer(FRAMEBUFFER_RESOLUTION, FRAMEBUFFER_RESOLUTION);
-        let lowresFramebuffer = createFramebuffer(FRAMEBUFFER_RESOLUTION, FRAMEBUFFER_RESOLUTION);
 
         // textures
         gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, textures[0]);
-        gl.activeTexture(gl.TEXTURE0 + POSITION_BUFFER_INDEX);
-        gl.bindTexture(gl.TEXTURE_2D, positionFramebuffers[0].texture);
-        gl.activeTexture(gl.TEXTURE0 + POSITION_BUFFER_INDEX + 1);
-        gl.bindTexture(gl.TEXTURE_2D, positionFramebuffers[1].texture);
-        gl.activeTexture(gl.TEXTURE0 + VELOCITY_BUFFER_INDEX);
-        gl.bindTexture(gl.TEXTURE_2D, velocityFramebuffers[0].texture);
-        gl.activeTexture(gl.TEXTURE0 + VELOCITY_BUFFER_INDEX + 1);
-        gl.bindTexture(gl.TEXTURE_2D, velocityFramebuffers[1].texture);
-        gl.activeTexture(gl.TEXTURE5);
-        gl.bindTexture(gl.TEXTURE_2D, lowresFramebuffer.texture);
-        gl.activeTexture(gl.TEXTURE6);
-        gl.bindTexture(gl.TEXTURE_2D, sceneFramebuffer.texture);
-        gl.activeTexture(gl.TEXTURE7);
         gl.bindTexture(gl.TEXTURE_2D, graphFramebuffer.texture);
-
-        // reset framebuffers
-        gl.useProgram(resetPrg.program);
-        gl[resetPrg.uniType[0]](resetPrg.uniLocation[0], [POINT_RESOLUTION, POINT_RESOLUTION]);
-        setAttribute(planeVBO, resetPrg.attLocation, resetPrg.attStride, planeIBO);
-        gl.viewport(0, 0, POINT_RESOLUTION, POINT_RESOLUTION);
-        for(let i = 0; i <= 1; ++i){
-            // position buffer
-            gl.bindFramebuffer(gl.FRAMEBUFFER, positionFramebuffers[i].framebuffer);
-            gl.clearColor(0.0, 0.0, 0.0, 0.0);
-            gl.clear(gl.COLOR_BUFFER_BIT);
-            gl.drawElements(gl.TRIANGLES, planeIndex.length, gl.UNSIGNED_SHORT, 0);
-            // velocity buffer
-            gl.bindFramebuffer(gl.FRAMEBUFFER, velocityFramebuffers[i].framebuffer);
-            gl.clearColor(0.0, 0.0, 0.0, 0.0);
-            gl.clear(gl.COLOR_BUFFER_BIT);
-            gl.drawElements(gl.TRIANGLES, planeIndex.length, gl.UNSIGNED_SHORT, 0);
-        }
-
-        // lowres framebuffer
-        gl.useProgram(lowresPrg.program);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, lowresFramebuffer.framebuffer);
-        gl.viewport(0, 0, FRAMEBUFFER_RESOLUTION, FRAMEBUFFER_RESOLUTION);
-        setAttribute(planeTexCoordVBO, lowresPrg.attLocation, lowresPrg.attStride, planeIBO);
-        gl[lowresPrg.uniType[0]](lowresPrg.uniLocation[0], 0);
-        gl.drawElements(gl.TRIANGLES, planeIndex.length, gl.UNSIGNED_SHORT, 0);
 
         // flags
         gl.disable(gl.DEPTH_TEST);
-        gl.enable(gl.BLEND);
-        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE, gl.ONE, gl.ONE);
 
         // setting
         run = true;
 
-        let offsettime = 0.0;
-
-        audio.src[0].play(offsettime);
+        audio.src[0].play();
 
         startTime = Date.now();
         nowTime = 0;
-        loopCount = 0;
         render();
 
         function render(){
-            // update sound ---------------------------------------------------
-            audio.src[0].update = true;
-            let soundData = 1.0;
-            for(let i = 0; i < 16; ++i){
-                soundData += (audio.src[0].onData[i] / 255.0) * 0.1;
-            }
-            // let isMouseDown = soundData > 1.8;
-            let isMouseDown = true;
-
-            nowTime = (Date.now() - startTime) / 1000 + offsettime;
-            ++loopCount;
-            let targetBufferIndex = loopCount % 2;
-            let prevBufferIndex = 1 - targetBufferIndex;
+            nowTime = (Date.now() - startTime) / 1000;
 
             switch(true){
                 case nowTime < 6.0:
@@ -413,51 +177,7 @@
                     break;
             }
 
-            // update gpgpu buffers -------------------------------------------
-            gl.disable(gl.BLEND);
-            gl.viewport(0, 0, POINT_RESOLUTION, POINT_RESOLUTION);
-            // velocity update
-            gl.useProgram(velocityPrg.program);
-            gl.bindFramebuffer(gl.FRAMEBUFFER, velocityFramebuffers[targetBufferIndex].framebuffer);
-            setAttribute(planeVBO, velocityPrg.attLocation, velocityPrg.attStride, planeIBO);
-            gl[velocityPrg.uniType[0]](velocityPrg.uniLocation[0], VELOCITY_BUFFER_INDEX + prevBufferIndex);
-            gl[velocityPrg.uniType[1]](velocityPrg.uniLocation[1], POSITION_BUFFER_INDEX + prevBufferIndex);
-            gl[velocityPrg.uniType[2]](velocityPrg.uniLocation[2], [POINT_RESOLUTION, POINT_RESOLUTION]);
-            gl[velocityPrg.uniType[3]](velocityPrg.uniLocation[3], nowTime);
-            gl[velocityPrg.uniType[4]](velocityPrg.uniLocation[4], isMouseDown);
-            gl[velocityPrg.uniType[5]](velocityPrg.uniLocation[5], [0.0, 0.0]);
-            gl.drawElements(gl.TRIANGLES, planeIndex.length, gl.UNSIGNED_SHORT, 0);
-            // position update
-            gl.useProgram(positionPrg.program);
-            gl.bindFramebuffer(gl.FRAMEBUFFER, positionFramebuffers[targetBufferIndex].framebuffer);
-            setAttribute(planeVBO, positionPrg.attLocation, positionPrg.attStride, planeIBO);
-            gl[positionPrg.uniType[0]](positionPrg.uniLocation[0], POSITION_BUFFER_INDEX + prevBufferIndex);
-            gl[positionPrg.uniType[1]](positionPrg.uniLocation[1], VELOCITY_BUFFER_INDEX + targetBufferIndex);
-            gl[positionPrg.uniType[2]](positionPrg.uniLocation[2], [POINT_RESOLUTION, POINT_RESOLUTION]);
-            gl[positionPrg.uniType[3]](positionPrg.uniLocation[3], isMouseDown);
-            gl.drawElements(gl.TRIANGLES, planeIndex.length, gl.UNSIGNED_SHORT, 0);
-
-            // render to final scene ------------------------------------------
-            gl.enable(gl.BLEND);
-            gl.bindFramebuffer(gl.FRAMEBUFFER, sceneFramebuffer.framebuffer);
-            gl.clearColor(0.0, 0.0, 0.0, 1.0);
-            gl.clearDepth(1.0);
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            gl.viewport(0, 0, FRAMEBUFFER_RESOLUTION, FRAMEBUFFER_RESOLUTION);
-
-            gl.useProgram(scenePrg.program);
-            setAttribute(pointVBO, scenePrg.attLocation, scenePrg.attStride);
-            mat.identity(mMatrix);
-            mat.scale(mMatrix, [soundData, soundData, soundData], mMatrix);
-            mat.multiply(vpMatrix, mMatrix, mvpMatrix);
-            gl[scenePrg.uniType[0]](scenePrg.uniLocation[0], false, mvpMatrix);
-            gl[scenePrg.uniType[1]](scenePrg.uniLocation[1], POINT_SIZE);
-            gl[scenePrg.uniType[2]](scenePrg.uniLocation[2], POSITION_BUFFER_INDEX + targetBufferIndex);
-            gl[scenePrg.uniType[3]](scenePrg.uniLocation[3], POINT_COLOR);
-            gl.drawArrays(gl.POINTS, 0, POINT_RESOLUTION * POINT_RESOLUTION);
-
             // render to graph
-            gl.disable(gl.BLEND);
             gl.bindFramebuffer(gl.FRAMEBUFFER, graphFramebuffer.framebuffer);
             gl.clearColor(0.0, 0.0, 0.0, 1.0);
             gl.clearDepth(1.0);
@@ -477,12 +197,7 @@
             gl.useProgram(pastePrg.program);
             gl.viewport(0, 0, canvasWidth, canvasHeight);
             setAttribute(planeTexCoordVBO, pastePrg.attLocation, pastePrg.attStride, planeIBO);
-            gl[pastePrg.uniType[0]](pastePrg.uniLocation[0], [canvasWidth, canvasHeight]);
-            gl[pastePrg.uniType[1]](pastePrg.uniLocation[1], mouse);
-            gl[pastePrg.uniType[2]](pastePrg.uniLocation[2], nowTime);
-            gl[pastePrg.uniType[3]](pastePrg.uniLocation[3], 5);
-            gl[pastePrg.uniType[4]](pastePrg.uniLocation[4], 6);
-            gl[pastePrg.uniType[5]](pastePrg.uniLocation[5], 7);
+            gl[pastePrg.uniType[0]](pastePrg.uniLocation[0], 0);
             gl.drawElements(gl.TRIANGLES, planeIndex.length, gl.UNSIGNED_SHORT, 0);
 
             gl.flush();
