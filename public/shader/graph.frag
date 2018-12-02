@@ -316,14 +316,76 @@ void scene5(vec2 p, inout its v){
 }
 
 void scene6(vec2 p, inout its v){
+    float t = max(time - 36.25, 0.0);
     vec2 q = rotate(p, sin(time) * 0.2);
     float f = 0.1 - abs(cos(time * 5.0) * 0.1);
     q.y += f;
     q /= (1.0 - f);
     sunrise(p - vec2(0.0), 10.0, time, RED, YELLOW, v);
     maguro(q, v);
+    v.col *= step(length(p) - t, 0.0);
 }
 
+void scene7(vec2 p, inout its v){
+    vec2 q = rotate(p, sin(49.5) * 0.2);
+    float f = 0.1 - abs(cos(49.5 * 5.0) * 0.1);
+    q.y += f;
+    q /= (1.0 - f);
+    sunrise(p - vec2(0.0), 10.0, time, RED, YELLOW, v);
+    maguro(q, v);
+    q = vec2(
+        p.x - max(2.0 - (time - 49.5) * 5.0, -2.0),
+        p.y
+    );
+    nanameninja(q, v);
+    if(time > 50.0){
+        float t = time - 50.0;
+        for(int i = 0; i < 5; ++i){
+            float f = float(i) * 0.2;
+            float rad = f * PI2;
+            float s = sin(rad);
+            float c = cos(rad);
+            vec2 r = mat2(c, -s, s, c) * p;
+            r.x = max(r.x - 2.0 + t * 2.0, -1.0);
+            shuriken(r, float(i + 1), v);
+        }
+    }
+    if(time > 52.25){
+        v.col = 1.0 - v.col;
+    }
+}
+
+void scene8(vec2 p, inout its v){
+    vec2 q = rotate(p, sin(49.5) * 0.2);
+    float f = 0.1 - abs(cos(49.5 * 5.0) * 0.1);
+    q.y += f;
+    q /= (1.0 - f);
+    sunrise(p - vec2(0.0), 10.0, time, RED, YELLOW, v);
+    maguro(q, v);
+    float t = time - 52.5;
+    for(int i = 0; i < 5; ++i){
+        float f = float(i) * 0.2;
+        float rad = f * PI2 + t * 0.5;
+        float s = sin(rad);
+        float c = cos(rad);
+        vec2 r = mat2(c, -s, s, c) * p;
+        r.x = mod(r.x - 2.0 + t * 3.0 + f * 0.25, 2.0) - 1.0;
+        slash(r, vec2(1.0, 0.1), vec3(0.0, 0.9, 0.9), v);
+    }
+    float d = 1.0 - max(time - 58.0, 0.0) / (65.25 - 58.0);
+    float n = step(rnd(vec2(time)), 0.5);
+    if(d < 1.0){
+        v.col = ((1.0 - v.col) * n + v.col * (1.0 - n)) * max(d, 0.0);
+    }else{
+        v.col = (1.0 - v.col) * max(d, 0.0);
+    }
+}
+
+void scene9(vec2 p, inout its v){
+    float t = fract((time - 67.0) * 2.25);
+    vec2 q = mod(p * (15.0 - t * 13.0), 2.0) - 1.0;
+    shoumenninja(q * 0.9, v);
+}
 
 void main(){
     vec2 p = (gl_FragCoord.xy * 2.0 - resolution) / min(resolution.x, resolution.y);
@@ -342,6 +404,12 @@ void main(){
         scene5(p, v);
     }else if(scene == 6){
         scene6(p, v);
+    }else if(scene == 7){
+        scene7(p, v);
+    }else if(scene == 8){
+        scene8(p, v);
+    }else if(scene == 9){
+        scene9(p, v);
     }else{
         scene0(p, v);
     }
